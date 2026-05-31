@@ -2,8 +2,21 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getAllAuthors, getBooksByAuthorId } from '@/lib/data';
 
-export default function AuthorsPage() {
+interface PageProps {
+  searchParams: Promise<{ page?: string }>;
+}
+
+export default async function AuthorsPage({ searchParams }: PageProps) {
+  // 1. Await the search parameters from the URL query string
+  const { page } = await searchParams;
   const authors = getAllAuthors();
+
+  //2. Implement pagination logic
+  const currentPage = Number(page?? '1');
+  const pageSize = 3; // Number of authors per page
+  const totalPages = Math.ceil(authors.length / pageSize);
+
+  const paginatedAuthors = authors.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -11,8 +24,9 @@ export default function AuthorsPage() {
         All Authors
       </h1>
       
+      {/*Paginated Grid*/}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {authors.map((author) => {
+        {paginatedAuthors.map((author) => {
           const bookCount = getBooksByAuthorId(author.id).length;
           
           return (
@@ -58,6 +72,32 @@ export default function AuthorsPage() {
           );
         })}
       </div>
+      
+      {/* Server-Side Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-center mt-8 gap-4">
+          <Link
+            href={`/authors?page=${currentPage - 1}`}
+            className = {`px-4 py-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 ${
+              currentPage === 1 ? 'cursor-not-allowed opacity-50' : ''
+            }`}
+          >
+            Previous
+          </Link>
+          <span className="py-2 text-sm text-zinc-600 dark:text-zinc-400 flex items-center">
+            Page {currentPage} of {totalPages}
+          </span>
+
+          <Link
+            href={`/authors?page=${currentPage + 1}`}
+            className = {`px-4 py-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 ${
+              currentPage === totalPages ? 'cursor-not-allowed opacity-50' : ''
+            }`}
+          >
+            Next
+          </Link>
+          </div>
+      )}
     </div>
   );
 }
