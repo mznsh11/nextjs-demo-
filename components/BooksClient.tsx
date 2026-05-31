@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import {useSearchParams, useRouter, usePathname} from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import SearchBar from './SearchBar';
@@ -13,11 +14,19 @@ interface BooksClientProps {
 
 export default function BooksClient({ initialBooks, authors }: BooksClientProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedGenre, setSelectedGenre] = useState<string>('all');
+  const searchParams = useSearchParams();
+  // Get genre from URL query parameters
+  const selectedGenre = searchParams.get('genre') ?? 'all';
+
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const currentPage = Number(searchParams.get('page') ?? '1');
+  const pageSize = 4; // Number of books per page
 
   // Get unique genres
   const genres = useMemo(() => {
-    const genreSet = new Set(initialBooks.map(book => book.genre));
+    const genreSet = new Set(initialBooks.map((book) => book.genre));
     return ['all', ...Array.from(genreSet)];
   }, [initialBooks]);
 
@@ -30,6 +39,9 @@ export default function BooksClient({ initialBooks, authors }: BooksClientProps)
       return matchesSearch && matchesGenre;
     });
   }, [initialBooks, searchQuery, selectedGenre, authors]);
+
+  const totalPages = Math.ceil(filteredBooks.length / pageSize);
+  const paginatedBooks = filteredBooks.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -48,7 +60,12 @@ export default function BooksClient({ initialBooks, authors }: BooksClientProps)
           {genres.map((genre) => (
             <button
               key={genre}
-              onClick={() => setSelectedGenre(genre)}
+              onClick={() => {
+                const params = new URLSearchParams(searchParams.toString());
+                params.set('genre', genre);
+                params.set('page', '1'); // Reset to first page when changing genre
+                router.push(`/books?${params.toString()}`);
+              }}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                 selectedGenre === genre
                   ? 'bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900'
@@ -63,7 +80,8 @@ export default function BooksClient({ initialBooks, authors }: BooksClientProps)
 
       {/* Results count */}
       <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
-        Showing {filteredBooks.length} {filteredBooks.length === 1 ? 'book' : 'books'}
+        Showing {paginatedBooks.length} {" "}
+        {paginatedBooks.length === 1 ? 'book' : 'books'}
       </p>
       
       {filteredBooks.length === 0 ? (
@@ -74,7 +92,7 @@ export default function BooksClient({ initialBooks, authors }: BooksClientProps)
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredBooks.map((book) => {
+          {paginatedBooks.map((book) => {
             const author = authors.find(a => a.id === book.authorId);
             
             return (
@@ -109,6 +127,36 @@ export default function BooksClient({ initialBooks, authors }: BooksClientProps)
             );
           })}
         </div>
+      )}
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className ="flex justify-center mt-8 space-x-4">
+          <button 
+            onClick={() => {
+              const params = new URLSearchParams(searchParams.toString());
+              params.set('page', String(currentPage - 1));
+              router.push(`${pathname}?${params.toString()}`);
+            }}
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+          <span className="text-sm text-zinc-600 dark:text-zinc-400">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button 
+            onClick={() => {
+              const params = new URLSearchParams(searchParams.toString());
+              params.set('page', String(currentPage + 1));
+              router.push(`${pathname}?${params.toString()}`);
+            }}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
+          </div>
       )}
     </div>
   );
