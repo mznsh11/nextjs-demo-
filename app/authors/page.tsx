@@ -1,12 +1,14 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { getAllAuthors, getBooksByAuthorId } from '@/lib/data';
+import { delay } from '@/lib/delay';
 
 interface PageProps {
   searchParams: Promise<{ page?: string }>;
 }
 
 export default async function AuthorsPage({ searchParams }: PageProps) {
+  await delay(800); // Simulate a delay for loading data
   // 1. Await the search parameters from the URL query string
   const { page } = await searchParams;
   const authors = getAllAuthors();
