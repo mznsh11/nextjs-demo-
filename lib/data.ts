@@ -30,6 +30,13 @@ export interface Publisher {
   website: string;
 }
 
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  password: string;
+}
+
 export const authors: Author[] = [
   {
     id: 1,
@@ -242,6 +249,15 @@ export const publishers: Publisher[] = [
   },
 ];
 
+const users: User[] = [
+  {
+    id : 1, 
+    name: "Demo User",
+    email: "demo@example.com",
+    password: "password123", 
+  },
+];
+
 // Helper functions
 export function getAuthorById(id: number): Author | undefined {
   return authors.find((author) => author.id === id);
@@ -273,4 +289,13 @@ export function getPublisherById(id: number): Publisher | undefined {
 
 export function getBooksByPublisherId(publisherId: number): Book[] {
   return books.filter((book) => book.publisherId === publisherId);
+}
+
+export function authenticateUser(email: string, password: string): User | null {
+  const user = users.find((u) => u.email === email && u.password === password);
+  return user || null;
+}
+
+export function findUserByEmail(email: string): User | undefined {
+  return users.find((user) => user.email === email);
 }
